@@ -1,3 +1,9 @@
+if exists('g:compile#loaded')
+  finish
+endif
+
+let g:compile#loaded = 1
+
 let g:compile#commands = {'compile': {}, 'test': {}}
 
 function! g:compile#spawnTerminal(cmd)
@@ -58,4 +64,10 @@ endfunction
 command! Compile call compile#runCommand('compile')
 command! CompileTest call compile#runCommand('test')
 command! -nargs=? CompileSetCommands call compile#requestCommand('compile', <args>) | call compile#requestCommand('test', <args>)
+
+function! g:compile#setDefaultKeybindings()
+  nnoremap <C-c><C-c> :Compile<CR>
+  nnoremap <C-c><C-t> :CompileTest<CR>
+  nnoremap <C-c><C-b> :CompileSetCommands<CR>
+endfunction
 
