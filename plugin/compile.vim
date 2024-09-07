@@ -7,8 +7,10 @@ function! g:compile#spawnTerminal(cmd)
     exec 'terminal ' . a:cmd
     normal i
   else
-    echoerr 'This feature is unstable in Vim'
+    " echoerr 'This feature is unstable in Vim'
     exec 'topleft terminal ' . a:cmd
+    nnoremap <buffer> <silent> <CR> :bdelete <CR>
+    echo 'Press Enter to Exit terminal'
   endif
 endfunction
 
