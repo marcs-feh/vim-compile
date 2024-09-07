@@ -1,10 +1,15 @@
 let g:compile#commands = {'compile': {}, 'test': {}}
 
 function! g:compile#spawnTerminal(cmd)
+  if has('nvim')
     topleft split
-    horizontal resize 20
+    resize 20
     exec 'terminal ' . a:cmd
     normal i
+  else
+    echoerr 'This feature is unstable in Vim'
+    exec 'topleft terminal ' . a:cmd
+  endif
 endfunction
 
 function! g:compile#requestCommand(kind, ft = '')
@@ -12,6 +17,11 @@ function! g:compile#requestCommand(kind, ft = '')
     let l:ft = &filetype
   else
     let l:ft = a:ft
+  endif
+
+  if l:ft ==# ''
+    echoerr 'Cannot bind command to empty filetype'
+    throw l:ft
   endif
 
   if a:kind ==# 'compile'
