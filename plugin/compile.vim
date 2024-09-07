@@ -1,10 +1,10 @@
-if exists('g:compile#loaded')
-  finish
-endif
+" if exists('g:compile#loaded')
+"   finish
+" endif
 
 let g:compile#loaded = 1
 
-let g:compile#commands = {'compile': {}, 'test': {}}
+let g:compile#commands = {'compile': {}, 'test': {'vim':'ls'}}
 
 function! g:compile#spawnTerminal(cmd)
   if has('nvim')
@@ -29,7 +29,7 @@ function! g:compile#requestCommand(kind, ft = '')
 
   if l:ft ==# ''
     echoerr 'Cannot bind command to empty filetype'
-    throw l:ft
+	  return v:false
   endif
 
   if a:kind ==# 'compile'
@@ -38,7 +38,7 @@ function! g:compile#requestCommand(kind, ft = '')
     let l:prompt = 'Test with command: '
   else
     echoerr 'Invalid command type: ' . a:kind
-    throw a:kind
+    return v:false
   endif
 
   let l:userCmd = input(l:prompt, '')
@@ -56,7 +56,10 @@ function! g:compile#runCommand(kind, reset = v:false)
   if has_key(l:dict, ft) && !a:reset
     call compile#spawnTerminal(l:dict[l:ft])
   else
-    call compile#requestCommand(a:kind, l:ft)
+    let l:userCmd = compile#requestCommand(a:kind, l:ft)
+    if !l:userCmd
+      return
+    endif
     call compile#spawnTerminal(l:dict[l:ft])
   endif
 endfunction
@@ -65,7 +68,7 @@ command! Compile call compile#runCommand('compile')
 command! CompileTest call compile#runCommand('test')
 command! -nargs=? CompileSetCommands call compile#requestCommand('compile', <args>) | call compile#requestCommand('test', <args>)
 
-function! g:compile#setDefaultKeybindings()
+function! g:compile#defaultMappings()
   nnoremap <C-c><C-c> :Compile<CR>
   nnoremap <C-c><C-t> :CompileTest<CR>
   nnoremap <C-c><C-b> :CompileSetCommands<CR>
