@@ -1,0 +1,15 @@
+*compile.vim* Compile/Test your code quickly
+
+Author: marcs-feh <https://github.com/marcs-feh>
+License: MIT-0
+
+Compile your code quickly, this is a slimmed down version of Emacs'
+"compile-mode". Commands are filetype specific, each filetype has a 'compile'
+and a 'build' entry respectively.
+
+:Compile                        Run compile command for the current buffer filetype
+
+:CompileTest                    Run the test command for the current buffer filetype
+
+:CompileSetCommands {ft}        Set the commands for the specified filetype, otherwhise use current one.
+
