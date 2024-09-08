@@ -57,7 +57,7 @@ function! g:compile#runCommand(kind, reset = v:false)
     call compile#spawnTerminal(l:dict[l:ft])
   else
     let l:userCmd = compile#requestCommand(a:kind, l:ft)
-    if !l:userCmd
+    if l:userCmd == v:false
       return
     endif
     call compile#spawnTerminal(l:dict[l:ft])
