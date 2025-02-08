@@ -1,6 +1,6 @@
-" if exists('g:compile#loaded')
-"   finish
-" endif
+if exists('g:compile#loaded')
+  finish
+endif
 
 let g:compile#loaded = 1
 
@@ -41,7 +41,7 @@ function! g:compile#requestCommand(kind, ft = '')
     return v:false
   endif
 
-  let l:userCmd = input(l:prompt, '')
+  let l:userCmd = input(l:prompt, '', 'shellcmd')
 
   let g:compile#commands[a:kind][l:ft] = l:userCmd
 
