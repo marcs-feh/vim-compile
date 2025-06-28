@@ -41,7 +41,7 @@ function! g:compile#requestCommand(kind, ft = '')
     return v:false
   endif
 
-  let l:userCmd = input(l:prompt, '', 'shellcmd')
+  let l:userCmd = input(l:prompt, '', 'history')
 
   let g:compile#commands[a:kind][l:ft] = l:userCmd
 
