@@ -1,20 +1,43 @@
-if exists('g:compile#loaded')
-  finish
-endif
+" if exists('g:compile#loaded')
+"   finish
+" endif
 
 let g:compile#loaded = 1
 
+if !exists('g:compile#splitDir')
+  let g:compile#splitDir = 'top'
+endif
+
 let g:compile#commands = {'compile': {}, 'test': {'vim':'ls'}}
 
+function! g:compile#splitModifier()
+  if g:compile#splitDir ==# 'left'
+    return 'vertical topleft'
+  elseif g:compile#splitDir ==# 'right'
+    return 'vertical botright'
+  elseif g:compile#splitDir ==# 'bottom'
+    return 'botright'
+  else
+    return 'topleft'
+  endif
+endfunction
+
 function! g:compile#spawnTerminal(cmd)
+  let l:mod = compile#splitModifier()
+  let l:vertical = g:compile#splitDir ==# 'left' || g:compile#splitDir ==# 'right'
+
   if has('nvim')
-    topleft split
-    resize 20
+    exec l:mod . ' split'
+    if l:vertical
+      vertical resize 80
+    else
+      resize 20
+    endif
     exec 'terminal ' . a:cmd
     normal i
   else
     " echoerr 'This feature is unstable in Vim'
-    exec 'topleft terminal ' . a:cmd
+    exec l:mod . ' terminal ' . a:cmd
     nnoremap <buffer> <silent> <CR> :bdelete <CR>
     echo 'Press Enter to Exit terminal'
   endif
