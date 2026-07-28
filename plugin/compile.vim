@@ -14,9 +14,12 @@ endif
 
 " Equivalent to emacs' compilation-error-regexp-alist: each entry holds a
 " pattern plus the submatch indices for the file, line and column a compiler
-" reported. A 'col' of 0 means the pattern doesn't capture one.
+" reported. A 'col' of 0 means the pattern doesn't capture one, and 'msgAbove'
+" marks formats that put the position on a line of its own, so the quickfix
+" text has to be taken from the nearest line above it instead.
 if !exists('g:compile#errorFormats')
   let g:compile#errorFormats = [
+        \ {'pat': '\v^\s*--\>\s*(\f+):(\d+)(:(\d+))?', 'file': 1, 'lnum': 2, 'col': 4, 'msgAbove': 1},
         \ {'pat': '\v^\s*(\f+):(\d+):(\d+)',        'file': 1, 'lnum': 2, 'col': 3},
         \ {'pat': '\v^\s*(\f+)\((\d+),\s*(\d+)\)',  'file': 1, 'lnum': 2, 'col': 3},
         \ {'pat': '\v^\s*File "(\f+)", line (\d+)', 'file': 1, 'lnum': 2, 'col': 0},
@@ -85,14 +88,33 @@ function! g:compile#parseLine(text)
       continue
     endif
 
+    " A capturing group can be optional, so guard against a missing column
+    let l:col = l:fmt.col > 0 ? str2nr(l:m[l:fmt.col]) : 1
+
     return {
           \ 'filename': l:file,
           \ 'lnum': str2nr(l:m[l:fmt.lnum]),
-          \ 'col': l:fmt.col > 0 ? str2nr(l:m[l:fmt.col]) : 1,
+          \ 'col': l:col > 0 ? l:col : 1,
+          \ 'msgAbove': get(l:fmt, 'msgAbove', 0),
           \ }
   endfor
 
   return {}
+endfunction
+
+" Text to show in the quickfix list for the entry matched on a:idx. Formats
+" like uv/ty's report the position on a bare '--> file:line:col' line, with the
+" actual diagnostic sitting above it.
+function! s:entryText(lines, idx, entry)
+  if a:entry.msgAbove
+    for l:i in range(a:idx - 1, 0, -1)
+      if trim(a:lines[l:i]) !=# ''
+        return trim(a:lines[l:i])
+      endif
+    endfor
+  endif
+
+  return trim(a:lines[a:idx])
 endfunction
 
 " Scan the output buffer and fill the quickfix list, returning how many
@@ -102,13 +124,16 @@ function! g:compile#populateQuickfix()
     return 0
   endif
 
+  let l:lines = getbufline(s:termBuf, 1, '$')
+
   let l:items = []
-  for l:text in getbufline(s:termBuf, 1, '$')
-    let l:entry = compile#parseLine(l:text)
+  for l:i in range(len(l:lines))
+    let l:entry = compile#parseLine(l:lines[l:i])
     if empty(l:entry)
       continue
     endif
-    let l:entry.text = trim(l:text)
+    let l:entry.text = s:entryText(l:lines, l:i, l:entry)
+    unlet l:entry.msgAbove
     call add(l:items, l:entry)
   endfor
 
@@ -117,13 +142,31 @@ function! g:compile#populateQuickfix()
 endfunction
 
 function! g:compile#openQuickfix()
+  " Rescan while the output buffer is around, but once it's gone keep showing
+  " whatever the last compile left behind instead of clearing the list
   let l:found = compile#populateQuickfix()
+  if l:found == 0
+    let l:found = len(getqflist())
+  endif
+
   if l:found == 0
     cclose
     echo 'No error positions found in the compiler output'
     return
   endif
+
   copen
+endfunction
+
+" :cclose works from any window in the tab, so this toggles no matter where the
+" cursor happens to be
+function! g:compile#toggleQuickfix()
+  if getqflist({'winid': 0}).winid != 0
+    cclose
+    return
+  endif
+
+  call compile#openQuickfix()
 endfunction
 
 " First window in the tab showing a regular file, so errors don't take over
@@ -203,7 +246,7 @@ endfunction
 command! Compile call compile#runCommand('compile')
 command! CompileTest call compile#runCommand('test')
 command! -nargs=? CompileSetCommands call compile#requestCommand('compile', <args>) | call compile#requestCommand('test', <args>)
-command! CompileErrors call compile#openQuickfix()
+command! CompileErrors call compile#toggleQuickfix()
 
 " Vim has no autocmd for a :terminal job finishing, so there the quickfix list
 " is only filled on demand, through :CompileErrors
